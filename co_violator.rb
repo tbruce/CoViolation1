@@ -33,5 +33,6 @@ class CoViolator
     end
   end
 
+  # just do it.
   grinder = CoViolator.new('/home/tom/Dropbox/FMCSA/2013.csv')
   grinder.process
