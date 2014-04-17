@@ -11,12 +11,16 @@ class CoViolator
 
   # process the file into hash keyed by an array representing the pairs
   def process
+
     # process for all arities
     @combo_counts = Hash.new(0) #count of all pairings
     @cite_counts = Hash.new(0) #count of times each section is cited
+    @total_population = 0
+    @occurrence_counts = Array.new
     arity = 1
     while arity > 0
       arity = arity + 1
+      @occurrence_counts[arity] = 0
       f = File.open(@fn, "r")
       f.each_line do |line|
         # clean up cruft
@@ -27,16 +31,26 @@ class CoViolator
         breakout = line.split(',')
         # turns out that sometimes there are duplicated entries
         breakout.sort!.uniq!
+        @total_population = @total_population + 1
         breakout.each { |cite| @cite_counts[cite] = @cite_counts[cite] + 1 }
         combos = breakout.combination(arity).to_a
         if combos.length > 0
+          @occurrence_counts[arity] = @occurrence_counts[arity] + 1
           combos.each do |combo|
             @combo_counts[combo] = @combo_counts[combo] + 1
           end
         end
       end
       f.close
-      exit if @combo_counts.length < 1
+
+      if @combo_counts.length < 1
+        puts "There are #{@total_population} violation events in the database."
+        for n in 2..arity do
+          pct = 100 * @occurrence_counts[n] / @total_population
+          puts "There are #{@occurrence_counts[n]} violation events that contain #{n}-way violations ( #{pct}% ) ."
+        end
+        exit
+      end
       # sort the hash by count
       @combo_counts = Hash[@combo_counts.sort_by { |key, value| value }.reverse]
       make_csv(arity)
@@ -44,7 +58,9 @@ class CoViolator
       @cite_counts.clear
       @combo_counts.default = 0
       @cite_counts.default = 0
+      @total_population = 0
     end
+
   end
 
   def make_csv(arity)
